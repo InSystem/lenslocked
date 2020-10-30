@@ -7,7 +7,13 @@ import (
 
 func handleFunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "<h1>Helo wolf</h2>")
+
+	if r.URL.Path == "/" {
+		fmt.Fprint(w, "<h1>Helo wolf</h2>")
+	} else if r.URL.Path == "/dog" {
+		fmt.Fprint(w, "<h1>Helo dog</h2>")
+	}	
+	
 }
 
 func main() {
