@@ -12,7 +12,10 @@ func handleFunc(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "<h1>Helo wolf</h2>")
 	} else if r.URL.Path == "/dog" {
 		fmt.Fprint(w, "<h1>Helo dog</h2>")
-	}	
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, "<h1>We could not find the page</h2>")
+	}
 	
 }
 
