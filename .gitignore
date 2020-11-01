@@ -1,5 +1,6 @@
 ./README.md
 .DS_Store
+.history
 lenslocked.com
 *swp
 tmp/

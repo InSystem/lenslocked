@@ -16,7 +16,7 @@ func handleFunc(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprint(w, "<h1>We could not find the page:(</h2>")
-	} 
+	}
 
 }
 
