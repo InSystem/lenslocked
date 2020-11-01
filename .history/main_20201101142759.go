@@ -25,9 +25,9 @@ func home (w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<h1>Home page</h2>")
 }
 
-func contact (w http.ResponseWriter, r *http.Request) {
+func home (w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "<h1>Contact page</h2>")
+	fmt.Fprint(w, "<h1>Contacts page</h2>")
 }
 
 func main() {
