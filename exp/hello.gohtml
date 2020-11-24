@@ -1,0 +1,10 @@
+<h1>Hello {{.Name}}</h1>
+<p>Int: {{.Int}}</p>
+<p>Float: {{.Float}}</p>
+<p>Slice: {{.Slice}}</p>
+<p>Map: {{.Map}}</p>
+
+{{range .Slice}}
+    <p>{{.}}</p>
+{{end}}
+
