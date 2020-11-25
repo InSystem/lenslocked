@@ -7,15 +7,16 @@ import (
 	"html/template"
 )
 
-var homeTemplate *template.Template
+var (
+	homeTemplate *template.Template
+	contactTemplate *template.Template
+)
 
 func home (w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	if err := homeTemplate.Execute(w, nil); err != nil {
-
+		panic(err)
 	}
-	
-	fmt.Fprint(w, "<h1>Home page</h2>")
 }
 
 
@@ -26,7 +27,9 @@ func faq (w http.ResponseWriter, r *http.Request) {
 
 func contact (w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "<h1>Contact page</h2>")
+	if err := homeTemplate.Execute(w, nil); err != nil {
+		panic(err)
+	}
 }
 
 func notFound (w http.ResponseWriter, r *http.Request) {
@@ -37,6 +40,11 @@ func notFound (w http.ResponseWriter, r *http.Request) {
 func main() {
 	var err error
 	homeTemplate, err = template.ParseFiles("views/home.gohtml")
+	if err != nil {
+		panic(err)
+	}
+
+	homeTemplate, err = template.ParseFiles("views/contact.gohtml")
 	if err != nil {
 		panic(err)
 	}
