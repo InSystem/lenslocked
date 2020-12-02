@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/InSystem/lenslocked/controllers"
 	"github.com/InSystem/lenslocked/views"
 	"github.com/gorilla/mux"
 )
@@ -37,12 +38,15 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 func main() {
 	homeView = views.NewView("bootstrap", "views/home.gohtml")
 	contactView = views.NewView("bootstrap", "views/contact.gohtml")
-	signupView = views.NewView("bootstrap", "views/signup.gohtml")
+
+	usersC := controllers.NewUsers()
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", home)
-	r.HandleFunc("/contact", contact)
-	r.HandleFunc("/signup", signup)
+	r.HandleFunc("/", home).Methods("GET")
+	r.HandleFunc("/contact", contact).Methods("GET")
+	r.HandleFunc("/signup", usersC.New).Methods("GET")
+	r.HandleFunc("/signup", usersC.Create).Methods("POST")
+
 	r.NotFoundHandler = http.HandlerFunc(notFound)
 
 	http.ListenAndServe(":3000", r)
