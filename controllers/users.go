@@ -27,5 +27,8 @@ func (u *Users) New(w http.ResponseWriter, r *http.Request) {
 // This is usef to process the signup form
 // POST /signup
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "we are created  new user!")
+	if err := r.ParseForm(); err != nil {
+		panic(err)
+	}
+	fmt.Fprintln(w, r.PostForm["email"])
 }
