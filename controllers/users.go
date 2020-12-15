@@ -3,7 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-	"github.com/gorilla/schema"
+	// _ "github.com/gorilla/schema" // 
 	"github.com/InSystem/lenslocked/views"
 )
 

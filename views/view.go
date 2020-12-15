@@ -32,8 +32,16 @@ type View struct {
 	Layout   string
 }
 
+// ServeHttp is used to ... 
+func (v *View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := v.Render(w, nil); err != nil {
+		panic(err)
+	}
+}
+
 // Render is used to render view with predefined layout
 func (v *View) Render(w http.ResponseWriter, data interface{}) error {
+	w.Header().Set("Content-Type", "text/html")
 	return v.Template.ExecuteTemplate(w, v.Layout, data)
 }
 
