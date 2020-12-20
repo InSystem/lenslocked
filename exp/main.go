@@ -1,7 +1,11 @@
 package main
 
 import (
+	// "bufio"
+	// "os"
+	// "strings"
 	"fmt"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -17,7 +21,14 @@ const (
 type User struct {
 	gorm.Model
 	Name  string
-	Email string `gorm:not null;uniqueIndex;`
+	Email string `gorm:"not null;uniqueIndex"`
+	Orders []Order
+}
+
+type Order struct {
+	UserID uint
+	Amount int
+	Description string
 }
 
 func main() {
@@ -29,20 +40,64 @@ func main() {
 	// 	panic(err)
 	// }
 
-
-	sqlDB, err := gorm.Open(postgres.Open(psqlInfo), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(psqlInfo), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
 
-	db, err := sqlDB.DB()
+	sqlDB, err := db.DB()
 
-	defer db.Close()
+	defer sqlDB.Close()
 
-	if err = db.Ping(); err != nil {
+	// sqlDB.Migrator().DropTable(&User{})
+	db.AutoMigrate(&User{}, &Order{})
+
+	// name, email := getInfo()
+
+	// u := User{
+	// 	Name: name,
+	// 	Email: email,
+	// }
+
+	// if err = sqlDB.Create(&u).Error; err != nil {
+	// 	panic(err)
+	// }
+
+	// fmt.Printf("%v\n", u)
+
+	var u User 
+	if err := db.Preload("Orders").First(&u).Error; err != nil {
 		panic(err)
 	}
 
-	sqlDB.Migrator().DropTable(&User{})
-	// sqlDB.AutoMigrate(&User{})
+	createOrder(db, u, 1001, "fake description #1")
+	createOrder(db, u, 1002, "fake description #2")
+	// db.Where("id = ?", 3).First(&u)
+	// fmt.Println(u)
+}
+
+// func getInfo() (name, email string) {
+// 	reader := bufio.NewReader(os.Stdin)
+// 	fmt.Println("Enter name: ")
+// 	name, _ = reader.ReadString('\n')
+
+// 	fmt.Println("Enter email: ")
+// 	email, _ = reader.ReadString('\n')
+
+// 	name = strings.TrimSpace(name)
+// 	email = strings.TrimSpace(email)
+// 	return name, email
+// }
+
+
+func createOrder(db *gorm.DB, user User, amount int, desc string) {
+	err := db.Create(&Order{
+		UserID: user.ID,
+		Amount: amount, 
+		Description: desc,
+	}).Error
+
+	if err != nil {
+		panic(err)
+	}
 }
