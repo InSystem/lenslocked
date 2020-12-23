@@ -32,8 +32,27 @@ func main() {
 	}
 	defer us.Close()
 
-	user, err := us.ByID(1)
-	fmt.Println(user)
+	// user := models.User{
+	// 	Name: "alexey ryabov2",
+	// 	Email: "alexey@gmail2.com",
+	// }
+
+	// if err := us.Create(&user); err != nil {
+	// 	panic(err)
+	// }
+
+	// user.Email = "alesha@gmail2.com"
+	
+	if err := us.Delete(uint(6)); err != nil {
+		panic(err)
+	}
+
+
+	// userByID, err := us.ByID(int(user.ID))
+	// fmt.Println(userByID)
+
+	// userByEmail, err := us.ByEmail("alesha@gmail2.com")
+	// fmt.Println(userByEmail)
 
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers()
