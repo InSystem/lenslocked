@@ -5,6 +5,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"golang.org/x/crypto/bcrypt"
 	// "gorm.io/gorm/logger"
 )
 
@@ -22,7 +23,8 @@ type User struct {
 	gorm.Model
 	Name  string
 	Email string `gorm:"not null;uniqueIndex"`
-	// Orders []Order
+	Password string `gorm:"-"`
+	PasswordHash string `gorm:"not null"`
 }
 
 // NewUserService create connection to the databse
@@ -60,6 +62,13 @@ func (us *UserService) ByEmail(email string) (*User, error) {
 
 // Create will create the provided user
 func (us *UserService) Create(user *User) error {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	user.PasswordHash = string(hashedBytes)
+	user.Password = ""
 	return us.db.Create(user).Error
 }
 
