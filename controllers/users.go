@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"net/http"
-
+	"fmt"
 	"github.com/InSystem/lenslocked/models"
 
 	"github.com/InSystem/lenslocked/views"
@@ -11,15 +11,17 @@ import (
 
 // Users is type for Users View
 type Users struct {
-	NewView *views.View
-	us      *models.UserService
+	NewView   *views.View
+	LoginView *views.View
+	us        *models.UserService
 }
 
 // NewUsers create signup view
 func NewUsers(us *models.UserService) *Users {
 	return &Users{
-		NewView: views.NewView("bootstrap", "users/new"),
-		us:      us,
+		NewView:   views.NewView("bootstrap", "users/new"),
+		LoginView: views.NewView("bootstrap", "users/login"),
+		us:        us,
 	}
 }
 
@@ -47,8 +49,8 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := models.User{
-		Name:  form.Name,
-		Email: form.Email,
+		Name:     form.Name,
+		Email:    form.Email,
 		Password: form.Password,
 	}
 
@@ -56,4 +58,23 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Fprintln(w, user)
+}
+
+// SignupForm is  New User sctruct
+type LoginForm struct {
+	Email    string `schema:"email"`
+	Password string `schema:"password"`
+}
+
+// Login is used to verify the provided email and password
+// and log in if they are correct
+func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
+	var form LoginForm
+	if err := parseForm(r, &form); err != nil {
+		panic(err) // http.Error will be more right
+	}
+
+	fmt.Fprintln(w, form)
 }
