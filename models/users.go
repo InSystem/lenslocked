@@ -12,6 +12,7 @@ import (
 var (
 	ErrorNotFound  = errors.New("models: resourses not found")
 	ErrorInvalidID = errors.New("models: invalid ID")
+	ErrorPasswordIncorrect = errors.New("models: password incorrect")
 )
 
 const userPwPepper = "some-rando-string"
@@ -60,6 +61,25 @@ func (us *UserService) ByEmail(email string) (*User, error) {
 	db := us.db.Where("email=?", email)
 	err := first(db, &user)
 	return &user, err
+}
+
+//Authenticate can be used to authenticate a user with the email and password
+func (us *UserService) Authenticate(email,password string) (*User, error){
+	foundUser, err := us.ByEmail(email)
+	if err != nil{
+		return nil, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(foundUser.PasswordHash),[]byte(password + userPwPepper))
+	if err != nil{
+		switch err {
+			case bcrypt.ErrMismatchedHashAndPassword: 
+				return nil, ErrorPasswordIncorrect
+			default:
+				return nil, err
+		}
+	} 
+
+	return foundUser, nil
 }
 
 // Create will create the provided user

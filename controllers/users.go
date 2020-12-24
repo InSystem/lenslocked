@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
+
 	"github.com/InSystem/lenslocked/models"
 
 	"github.com/InSystem/lenslocked/views"
@@ -76,5 +77,16 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		panic(err) // http.Error will be more right
 	}
 
-	fmt.Fprintln(w, form)
+	user, err := u.us.Authenticate(form.Email, form.Password)
+
+	switch err {
+	case models.ErrorNotFound:
+		fmt.Fprintln(w, "Invalid email adress")
+	case models.ErrorPasswordIncorrect:
+		fmt.Fprintln(w, "Provided password is incorrect")
+	case nil:
+		fmt.Fprintln(w, user)
+	default:
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
