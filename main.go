@@ -31,6 +31,8 @@ func main() {
 	must(err)
 	defer us.Close()
 
+	// us.DestructiveReset()
+
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(us)
 
