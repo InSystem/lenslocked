@@ -3,32 +3,40 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-	// _ "github.com/gorilla/schema" // 
-	"github.com/InSystem/lenslocked/views"
-)
 
-// NewUsers create signup view
-func NewUsers() *Users {
-	return &Users{
-		NewView: views.NewView("bootstrap", "users/new"),
-	}
-}
+	"github.com/InSystem/lenslocked/models"
+
+	"github.com/InSystem/lenslocked/views"
+	_ "github.com/gorilla/schema"
+)
 
 // Users is type for Users View
 type Users struct {
 	NewView *views.View
+	us      *models.UserService
+}
+
+// NewUsers create signup view
+func NewUsers(us *models.UserService) *Users {
+	return &Users{
+		NewView: views.NewView("bootstrap", "users/new"),
+		us:      us,
+	}
 }
 
 // New is used to create a form where user can create  anew account
 // GET /signup
 func (u *Users) New(w http.ResponseWriter, r *http.Request) {
-	u.NewView.Render(w, nil)
+	if err := u.NewView.Render(w, nil); err != nil {
+		panic(err)
+	}
 }
 
 // SignupForm is  New User sctruct
 type SignupForm struct {
-	Email    string `schema: "email"`
-	Password string `schema: "password"`
+	Name     string `schema:"name"`
+	Email    string `schema:"email"`
+	Password string `schema:"password"`
 }
 
 // Create is used to process the signup form
@@ -38,5 +46,14 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 	if err := parseForm(r, &form); err != nil {
 		panic(err)
 	}
-	fmt.Fprintln(w, form)
+
+	user := models.User{
+		Name:  form.Name,
+		Email: form.Email,
+	}
+
+	if err := u.us.Create(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

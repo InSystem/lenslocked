@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -96,7 +95,18 @@ func (us *UserService) DestructiveReset() error {
 		return err
 	}
 
-	return us.db.AutoMigrate(&User{})
+	return us.AutoMigrate()
+}
+
+// AutoMigrate automatically atomatically UserService
+func (us *UserService) AutoMigrate() error {
+
+	err := us.db.AutoMigrate(&User{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func first(db *gorm.DB, dst interface{}) error {

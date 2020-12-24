@@ -14,7 +14,7 @@ const (
 	host     = "localhost"
 	port     = 5432
 	user     = "sveta"
-	password = "postgres"
+	password = "postgkres"
 	dbname   = "lenslocked_dev"
 )
 
@@ -63,6 +63,7 @@ func main() {
 	// 	panic(err)
 	// }
 
+
 	// fmt.Printf("%v\n", u)
 
 	var u User 
@@ -101,3 +102,20 @@ func createOrder(db *gorm.DB, user User, amount int, desc string) {
 		panic(err)
 	}
 }
+
+	// user := models.User{
+	// 	Name: "alexey ryabov2",
+	// 	Email: "alexey@gmail2.com",
+	// }
+
+	// if err := us.Create(&user); err != nil {
+	// 	panic(err)
+	// }
+
+	// user.Email = "alesha@gmail2.com"
+
+	// userByID, err := us.ByID(int(user.ID))
+	// fmt.Println(userByID)
+
+	// userByEmail, err := us.ByEmail("julia@mail.co")
+	// fmt.Println(userByEmail)

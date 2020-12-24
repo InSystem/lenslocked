@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/InSystem/lenslocked/models"
 	"fmt"
 	"net/http"
+
+	"github.com/InSystem/lenslocked/models"
 
 	"github.com/InSystem/lenslocked/controllers"
 	"github.com/gorilla/mux"
@@ -11,8 +12,8 @@ import (
 
 const (
 	host     = "localhost"
-	port     = 5432
 	user     = "sveta"
+	port     = 5432
 	password = "postgres"
 	dbname   = "lenslocked_dev"
 )
@@ -27,40 +28,17 @@ func main() {
 		host, port, user, password, dbname)
 
 	us, err := models.NewUserService(psqlInfo)
-	if err != nil {
-		panic(err)
-	}
+	must(err)
 	defer us.Close()
 
-	// user := models.User{
-	// 	Name: "alexey ryabov2",
-	// 	Email: "alexey@gmail2.com",
-	// }
-
-	// if err := us.Create(&user); err != nil {
-	// 	panic(err)
-	// }
-
-	// user.Email = "alesha@gmail2.com"
-	
-	if err := us.Delete(uint(6)); err != nil {
-		panic(err)
-	}
-
-
-	// userByID, err := us.ByID(int(user.ID))
-	// fmt.Println(userByID)
-
-	// userByEmail, err := us.ByEmail("alesha@gmail2.com")
-	// fmt.Println(userByEmail)
-
 	staticC := controllers.NewStatic()
-	usersC := controllers.NewUsers()
+	usersC := controllers.NewUsers(us)
 
 	r := mux.NewRouter()
 	r.Handle("/", staticC.Home).Methods("GET")
 	r.Handle("/contact", staticC.Contact).Methods("GET")
 	r.HandleFunc("/signup", usersC.New).Methods("GET")
+
 	r.HandleFunc("/signup", usersC.Create).Methods("POST")
 
 	r.NotFoundHandler = http.HandlerFunc(notFound)
