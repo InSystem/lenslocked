@@ -60,6 +60,8 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	signIn(w, &user)
+	http.Redirect(w, r, "/cookietest", http.StatusFound)
 	fmt.Fprintln(w, user)
 }
 
@@ -90,12 +92,8 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	} else {
-		cookie := http.Cookie{
-			Name:  "email",
-			Value: form.Email,
-		}
-
-		http.SetCookie(w, &cookie)
+		signIn(w, user)
+		http.Redirect(w, r, "/cookietest", http.StatusFound)
 		fmt.Fprintln(w, user)
 	}
 }
@@ -107,6 +105,15 @@ func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	fmt.Fprintln(w, "Email is:", cookie)
+}
+
+func signIn(w http.ResponseWriter, user *models.User) {
+	cookie := http.Cookie{
+		Name:  "email",
+		Value: user.Email,
+	}
+
+	http.SetCookie(w, &cookie)
 }
