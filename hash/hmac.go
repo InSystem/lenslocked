@@ -13,7 +13,7 @@ type HMAC struct {
 	hmac hash.Hash
 }
 
-// NewHMAC creates and returns a new hmac object
+// NewHMAC creates and returns a new hmac object.
 func NewHMAC(key string) HMAC {
 	h := hmac.New(sha256.New, []byte(key))
 	return HMAC{
