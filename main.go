@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/InSystem/lenslocked/models"
 	"github.com/InSystem/lenslocked/controllers"
+	"github.com/InSystem/lenslocked/models"
 	"github.com/gorilla/mux"
 )
 
