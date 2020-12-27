@@ -32,6 +32,7 @@ type UserDB interface {
 	//Methods for altering uger
 	Create(user *User) error
 	Delete(id uint) error
+	Update(user *User) error
 
 	// uged to close DB connection
 	Close() error
@@ -39,6 +40,17 @@ type UserDB interface {
 	// Migration helpers
 	AutoMigrate() error
 	DestructiveReset() error
+}
+
+//UserService is a set of methods used to manipulate and work with the user model
+type UserService interface {
+	//Authenticate will verify the provided email and password are correct. If they
+	//are correct, the user corresponding to that email will return. Otherwise You
+	//will receive either: ErrNotFound, ErrPasswordIncorrect or other error if something
+	// goes wrong.
+	Authenticate(email, password string) (*User, error)
+
+	UserDB
 }
 
 type userGorm struct {
@@ -49,6 +61,9 @@ type userGorm struct {
 // If the userGorm stops mathing the inteface of UserDb ide starts complaing
 // So we can sure that userGorm match that interface
 var _ UserDB = &userGorm{}
+var _ UserDB = &userValidator{}
+var _ UserService = &userService{}
+
 
 // uger type
 type User struct {
@@ -61,7 +76,7 @@ type User struct {
 	RememberHash string `gorm:"not null;uniqueIndex"`
 }
 
-type UserService struct {
+type userService struct {
 	UserDB
 }
 
@@ -88,12 +103,12 @@ func NewUserGorm(connectionInfo string) (*userGorm, error) {
 	}, nil
 }
 
-func NewUserService(connectionInfo string) (*UserService, error) {
+func NewUserService(connectionInfo string) (UserService, error) {
 	ug, err := NewUserGorm(connectionInfo)
 	if err != nil {
 		return nil, err
 	}
-	return &UserService{
+	return &userService{
 		UserDB: &userValidator{
 			UserDB: ug,
 		},
@@ -132,7 +147,7 @@ func (ug *userGorm) ByRemember(token string) (*User, error) {
 }
 
 //Authenticate can be uged to authenticate a uger with the email and password
-func (us *UserService) Authenticate(email, password string) (*User, error) {
+func (us *userService) Authenticate(email, password string) (*User, error) {
 	founduger, err := us.ByEmail(email)
 	if err != nil {
 		return nil, err
