@@ -17,11 +17,14 @@ import (
 
 var (
 	ErrorNotFound          = errors.New("models: resourses not found")
-	ErrorInvalidID         = errors.New("models: invalid ID")
+	ErrorIDInvalid         = errors.New("models: invalid ID")
 	ErrorPasswordIncorrect = errors.New("models: password incorrect")
 	ErrorEmailRequired     = errors.New("models: email is required")
 	ErroroEmailInvalid     = errors.New("models: email is invalid")
 	ErrorEmailTaken        = errors.New("models: email is already taken")
+	ErrorPasswordRequired  = errors.New("models: password is reauired")
+	ErrorPasswordTooShort  = errors.New("models: password should be at least 8 characters long")
+	ErrorPasswordHashRequired = errors.New("models: password hash is required")
 )
 
 const userPwPepper = "some-random-string"
@@ -223,7 +226,7 @@ func newUserValidator(udb UserDB, hmac hash.HMAC, pepper string) *userValidator 
 		UserDB:      udb,
 		hmac:        hmac,
 		emailRegexp: regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"),
-		pepper: pepper,
+		pepper:      pepper,
 	}
 }
 
@@ -231,7 +234,7 @@ type userValidator struct {
 	UserDB
 	hmac        hash.HMAC
 	emailRegexp *regexp.Regexp
-	pepper string
+	pepper      string
 }
 
 // ByRemember hashes the given token and then call ByRemember
@@ -249,7 +252,10 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 // Create will create the provided uger
 func (uv *userValidator) Create(user *User) error {
 	err := runUserValidatorFunction(user,
+		uv.passwordRequired,
+		uv.passwordMinLength,
 		uv.bcryptPassword,
+		uv.passwordHashRequired,
 		uv.setRememberIfUnset,
 		uv.hmacRemember,
 		uv.normalizeEmail,
@@ -266,7 +272,9 @@ func (uv *userValidator) Create(user *User) error {
 // Update will hash a remember token if it is provided
 func (uv *userValidator) Update(user *User) error {
 	err := runUserValidatorFunction(user,
+		uv.passwordMinLength,
 		uv.bcryptPassword,
+		uv.passwordHashRequired,
 		uv.hmacRemember,
 		uv.normalizeEmail,
 		uv.requireEmail,
@@ -335,6 +343,31 @@ func (uv *userValidator) bcryptPassword(user *User) error {
 	return nil
 }
 
+func (uv *userValidator) passwordMinLength(user *User) error {
+	if user.Password == "" {
+		return nil
+	}
+
+	if len(user.Password) < 8 {
+		return ErrorPasswordTooShort
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordRequired(user *User) error {
+	if user.Password == "" {
+		return ErrorPasswordRequired
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordHashRequired(user *User) error {
+	if user.PasswordHash == "" {
+		return ErrorPasswordHashRequired
+	}
+	return nil
+}
+
 func (uv *userValidator) hmacRemember(user *User) error {
 	if user.Remember == "" {
 		return nil
@@ -359,7 +392,7 @@ func (uv *userValidator) setRememberIfUnset(user *User) error {
 func (uv *userValidator) idGreaterThan(n uint) userValidatorFunction {
 	return userValidatorFunction(func(user *User) error {
 		if user.ID <= n {
-			return ErrorInvalidID
+			return ErrorIDInvalid
 		}
 		return nil
 	})
