@@ -16,15 +16,17 @@ import (
 )
 
 var (
-	ErrorNotFound          = errors.New("models: resourses not found")
-	ErrorIDInvalid         = errors.New("models: invalid ID")
-	ErrorPasswordIncorrect = errors.New("models: password incorrect")
-	ErrorEmailRequired     = errors.New("models: email is required")
-	ErroroEmailInvalid     = errors.New("models: email is invalid")
-	ErrorEmailTaken        = errors.New("models: email is already taken")
-	ErrorPasswordRequired  = errors.New("models: password is reauired")
-	ErrorPasswordTooShort  = errors.New("models: password should be at least 8 characters long")
+	ErrorNotFound             = errors.New("models: resourses not found")
+	ErrorIDInvalid            = errors.New("models: invalid ID")
+	ErrorPasswordIncorrect    = errors.New("models: password incorrect")
+	ErrorEmailRequired        = errors.New("models: email is required")
+	ErroroEmailInvalid        = errors.New("models: email is invalid")
+	ErrorEmailTaken           = errors.New("models: email is already taken")
+	ErrorPasswordRequired     = errors.New("models: password is reauired")
+	ErrorPasswordTooShort     = errors.New("models: password should be at least 8 characters long")
 	ErrorPasswordHashRequired = errors.New("models: password hash is required")
+	ErroroRememberTooShort    = errors.New("models: remember token must be at least 32 bytes")
+	ErrorRememberRequired     = errors.New("models: remember is required")
 )
 
 const userPwPepper = "some-random-string"
@@ -257,7 +259,9 @@ func (uv *userValidator) Create(user *User) error {
 		uv.bcryptPassword,
 		uv.passwordHashRequired,
 		uv.setRememberIfUnset,
+		uv.rememberMinBytes,
 		uv.hmacRemember,
+		uv.rememberHashRequired,
 		uv.normalizeEmail,
 		uv.requireEmail,
 		uv.emailFormat,
@@ -275,7 +279,9 @@ func (uv *userValidator) Update(user *User) error {
 		uv.passwordMinLength,
 		uv.bcryptPassword,
 		uv.passwordHashRequired,
+		uv.rememberMinBytes,
 		uv.hmacRemember,
+		uv.rememberHashRequired,
 		uv.normalizeEmail,
 		uv.requireEmail,
 		uv.emailFormat,
@@ -354,6 +360,13 @@ func (uv *userValidator) passwordMinLength(user *User) error {
 	return nil
 }
 
+func (uv *userValidator) rememberHashRequired(user *User) error {
+	if user.RememberHash == "" {
+		return ErrorRememberRequired
+	}
+	return nil
+}
+
 func (uv *userValidator) passwordRequired(user *User) error {
 	if user.Password == "" {
 		return ErrorPasswordRequired
@@ -384,6 +397,21 @@ func (uv *userValidator) setRememberIfUnset(user *User) error {
 		}
 		user.Remember = token
 		return nil
+	}
+
+	return nil
+}
+
+func (uv *userValidator) rememberMinBytes(user *User) error {
+	if user.Remember == "" {
+		return nil
+	}
+	n, err := rand.NBytes(user.Remember)
+	if err != nil {
+		return err
+	}
+	if n < 32 {
+		return ErroroRememberTooShort
 	}
 
 	return nil
