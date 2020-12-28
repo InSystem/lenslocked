@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+	"regexp"
+	"strings"
 
 	"github.com/InSystem/lenslocked/rand"
 
@@ -17,9 +19,12 @@ var (
 	ErrorNotFound          = errors.New("models: resourses not found")
 	ErrorInvalidID         = errors.New("models: invalid ID")
 	ErrorPasswordIncorrect = errors.New("models: password incorrect")
+	ErrorEmailRequired     = errors.New("models: email is required")
+	ErroroEmailInvalid     = errors.New("models: email is invalid")
+	ErrorEmailTaken        = errors.New("models: email is already taken")
 )
 
-const ugerPwPepper = "some-rando-string"
+const userPwPepper = "some-random-string"
 const hmacSecretKey = "secret-hmac-key"
 
 // ugerDB is uged to interact with the users database
@@ -101,10 +106,7 @@ func NewUserService(connectionInfo string) (UserService, error) {
 	}
 
 	hmac := hash.NewHMAC(hmacSecretKey)
-	uv := &userValidator{
-		UserDB: ug,
-		hmac:   hmac,
-	}
+	uv := newUserValidator(ug, hmac, userPwPepper)
 
 	return &userService{
 		UserDB: uv,
@@ -147,7 +149,7 @@ func (us *userService) Authenticate(email, password string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(founduger.PasswordHash), []byte(password+ugerPwPepper))
+	err = bcrypt.CompareHashAndPassword([]byte(founduger.PasswordHash), []byte(password+userPwPepper))
 	if err != nil {
 		switch err {
 		case bcrypt.ErrMismatchedHashAndPassword:
@@ -216,9 +218,20 @@ func first(db *gorm.DB, dst interface{}) error {
 	return err
 }
 
+func newUserValidator(udb UserDB, hmac hash.HMAC, pepper string) *userValidator {
+	return &userValidator{
+		UserDB:      udb,
+		hmac:        hmac,
+		emailRegexp: regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"),
+		pepper: pepper,
+	}
+}
+
 type userValidator struct {
 	UserDB
-	hmac hash.HMAC
+	hmac        hash.HMAC
+	emailRegexp *regexp.Regexp
+	pepper string
 }
 
 // ByRemember hashes the given token and then call ByRemember
@@ -238,7 +251,11 @@ func (uv *userValidator) Create(user *User) error {
 	err := runUserValidatorFunction(user,
 		uv.bcryptPassword,
 		uv.setRememberIfUnset,
-		uv.hmacRemember)
+		uv.hmacRemember,
+		uv.normalizeEmail,
+		uv.requireEmail,
+		uv.emailFormat,
+		uv.emailIsAvailable)
 	if err != nil {
 		return err
 	}
@@ -246,9 +263,15 @@ func (uv *userValidator) Create(user *User) error {
 	return uv.UserDB.Create(user)
 }
 
-//Update will hash a remember token if it is provided
+// Update will hash a remember token if it is provided
 func (uv *userValidator) Update(user *User) error {
-	err := runUserValidatorFunction(user, uv.bcryptPassword, uv.hmacRemember)
+	err := runUserValidatorFunction(user,
+		uv.bcryptPassword,
+		uv.hmacRemember,
+		uv.normalizeEmail,
+		uv.requireEmail,
+		uv.emailFormat,
+		uv.emailIsAvailable)
 	if err != nil {
 		return err
 	}
@@ -256,7 +279,7 @@ func (uv *userValidator) Update(user *User) error {
 	return uv.UserDB.Update(user)
 }
 
-//Delete will delete the uger with the provided ID
+// Delete will delete the uger with the provided ID
 func (uv *userValidator) Delete(id uint) error {
 	user := User{
 		Model: gorm.Model{
@@ -271,6 +294,18 @@ func (uv *userValidator) Delete(id uint) error {
 	return uv.UserDB.Delete(id)
 }
 
+// ByEmail will normalize the email address before calling
+// ByEmail on the DB layer
+func (uv *userValidator) ByEmail(email string) (*User, error) {
+	user := User{
+		Email: email,
+	}
+	if err := runUserValidatorFunction(&user, uv.normalizeEmail); err != nil {
+		return nil, err
+	}
+	return uv.UserDB.ByEmail(user.Email)
+}
+
 type userValidatorFunction func(*User) error
 
 func runUserValidatorFunction(user *User, fns ...userValidatorFunction) error {
@@ -282,13 +317,13 @@ func runUserValidatorFunction(user *User, fns ...userValidatorFunction) error {
 	return nil
 }
 
-//bcryptPassword will hash a user's password with a predefined
-//pepper (userPepper) and bcrypt
+// bcryptPassword will hash a user's password with a predefined
+// pepper (userPepper) and bcrypt
 func (uv *userValidator) bcryptPassword(user *User) error {
 	if user.Password == "" {
 		return nil
 	}
-	pwBytes := []byte(user.Password + ugerPwPepper)
+	pwBytes := []byte(user.Password + userPwPepper)
 	hashedBytes, err := bcrypt.GenerateFromPassword(pwBytes, bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -328,4 +363,41 @@ func (uv *userValidator) idGreaterThan(n uint) userValidatorFunction {
 		}
 		return nil
 	})
+}
+
+func (uv *userValidator) normalizeEmail(user *User) error {
+	user.Email = strings.ToLower(user.Email)
+	user.Email = strings.TrimSpace(user.Email)
+	return nil
+}
+
+func (uv *userValidator) requireEmail(user *User) error {
+	if user.Email == "" {
+		return ErrorEmailRequired
+	}
+	return nil
+}
+
+func (uv *userValidator) emailFormat(user *User) error {
+	if user.Email != "" && !uv.emailRegexp.MatchString(user.Email) {
+		return ErroroEmailInvalid
+	}
+	return nil
+}
+
+func (uv *userValidator) emailIsAvailable(user *User) error {
+	existing, err := uv.ByEmail(user.Email)
+	if err == ErrorNotFound {
+		// Email adress is not taken
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	if user.ID != existing.ID {
+		return ErrorEmailTaken
+	}
+
+	return nil
 }
