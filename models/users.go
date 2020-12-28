@@ -235,7 +235,7 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 
 // Create will create the provided uger
 func (uv *userValidator) Create(user *User) error {
-	err := runUserValidatorFunction(user, 
+	err := runUserValidatorFunction(user,
 		uv.bcryptPassword,
 		uv.setRememberIfUnset,
 		uv.hmacRemember)
@@ -258,8 +258,14 @@ func (uv *userValidator) Update(user *User) error {
 
 //Delete will delete the uger with the provided ID
 func (uv *userValidator) Delete(id uint) error {
-	if id == 0 {
-		return ErrorInvalidID
+	user := User{
+		Model: gorm.Model{
+			ID: id,
+		},
+	}
+	err := runUserValidatorFunction(&user, uv.idGreaterThan(0))
+	if err != nil {
+		return err
 	}
 
 	return uv.UserDB.Delete(id)
@@ -313,4 +319,13 @@ func (uv *userValidator) setRememberIfUnset(user *User) error {
 	}
 
 	return nil
+}
+
+func (uv *userValidator) idGreaterThan(n uint) userValidatorFunction {
+	return userValidatorFunction(func(user *User) error {
+		if user.ID <= n {
+			return ErrorInvalidID
+		}
+		return nil
+	})
 }
