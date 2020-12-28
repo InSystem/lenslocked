@@ -10,7 +10,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
 	// "gorm.io/gorm/logger"
 )
 
@@ -236,16 +235,10 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 
 // Create will create the provided uger
 func (uv *userValidator) Create(user *User) error {
-	if user.Remember == "" {
-		token, err := rand.RememberToken()
-		if err != nil {
-			return err
-		}
-
-		user.Remember = token
-	}
-	
-	err := runUserValidatorFunction(user, uv.bcryptPassword, uv.hmacRemember);
+	err := runUserValidatorFunction(user, 
+		uv.bcryptPassword,
+		uv.setRememberIfUnset,
+		uv.hmacRemember)
 	if err != nil {
 		return err
 	}
@@ -255,7 +248,7 @@ func (uv *userValidator) Create(user *User) error {
 
 //Update will hash a remember token if it is provided
 func (uv *userValidator) Update(user *User) error {
-	err := runUserValidatorFunction(user, uv.bcryptPassword, uv.hmacRemember); 
+	err := runUserValidatorFunction(user, uv.bcryptPassword, uv.hmacRemember)
 	if err != nil {
 		return err
 	}
@@ -306,5 +299,18 @@ func (uv *userValidator) hmacRemember(user *User) error {
 		return nil
 	}
 	user.RememberHash = uv.hmac.Hash(user.Remember)
+	return nil
+}
+
+func (uv *userValidator) setRememberIfUnset(user *User) error {
+	if user.Remember == "" {
+		token, err := rand.RememberToken()
+		if err != nil {
+			return err
+		}
+		user.Remember = token
+		return nil
+	}
+
 	return nil
 }
