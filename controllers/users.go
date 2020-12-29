@@ -31,23 +31,11 @@ func NewUsers(us models.UserService) *Users {
 // New is used to create a form where user can create  anew account
 // GET /signup
 func (u *Users) New(w http.ResponseWriter, r *http.Request) {
-	type Alert struct {
-		Level   string
-		Message string
-	}
-
-	a := Alert{
-		Level:   "success",
-		Message: "Successfully rendering the dynamic alert!",
-	}
-
-	type Data struct {
-		Alert Alert
-		Yield interface{}
-	}
-
-	d := Data{
-		Alert: a,
+	d := views.Data{
+		Alert: &views.Alert{
+			Level:   views.AlertLevelWarning,
+			Message: "something went wrong",
+		},
 		Yield: "Hello",
 	}
 
