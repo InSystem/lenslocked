@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"fmt"
 	"net/http"
 
@@ -31,15 +32,15 @@ func NewUsers(us models.UserService) *Users {
 // New is used to create a form where user can create  anew account
 // GET /signup
 func (u *Users) New(w http.ResponseWriter, r *http.Request) {
-	d := views.Data{
-		Alert: &views.Alert{
-			Level:   views.AlertLevelWarning,
-			Message: "something went wrong",
-		},
-		Yield: "Hello",
-	}
+	// d := views.Data{
+	// 	Alert: &views.Alert{
+	// 		Level:   views.AlertLevelWarning,
+	// 		Message: "something went wrong",
+	// 	},
+	// 	Yield: "Hello",
+	// }
 
-	if err := u.NewView.Render(w, d); err != nil {
+	if err := u.NewView.Render(w, nil); err != nil {
 		panic(err)
 	}
 }
@@ -54,9 +55,18 @@ type SignupForm struct {
 // Create is used to process the signup form
 // POST /signup
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
+	var vd views.Data
+
 	var form SignupForm
 	if err := parseForm(r, &form); err != nil {
-		panic(err)
+		log.Println(err)
+		vd.Alert = &views.Alert {
+			Level: views.AlertLevelError,
+			Message: views.AlertMessageGeneric,
+		}
+		//nolint:errcheck
+		u.NewView.Render(w, vd)
+		return 
 	}
 
 	user := models.User{
@@ -66,13 +76,18 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := u.us.Create(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		vd.Alert = &views.Alert {
+			Level: views.AlertLevelError,
+			Message: err.Error(),
+		}
+		//nolint:errcheck
+		u.NewView.Render(w, vd)
 		return
 	}
 
 	err := u.signIn(w, &user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 	http.Redirect(w, r, "/cookietest", http.StatusFound)
