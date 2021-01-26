@@ -1,7 +1,6 @@
 package models
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 
@@ -13,20 +12,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	// "gorm.io/gorm/logger"
-)
-
-var (
-	ErrorNotFound             = errors.New("models: resourses not found")
-	ErrorIDInvalid            = errors.New("models: invalid ID")
-	ErrorPasswordIncorrect    = errors.New("models: password incorrect")
-	ErrorEmailRequired        = errors.New("models: email is required")
-	ErroroEmailInvalid        = errors.New("models: email is invalid")
-	ErrorEmailTaken           = errors.New("models: email is already taken")
-	ErrorPasswordRequired     = errors.New("models: password is reauired")
-	ErrorPasswordTooShort     = errors.New("models: password should be at least 8 characters long")
-	ErrorPasswordHashRequired = errors.New("models: password hash is required")
-	ErroroRememberTooShort    = errors.New("models: remember token must be at least 32 bytes")
-	ErrorRememberRequired     = errors.New("models: remember is required")
 )
 
 const userPwPepper = "some-random-string"
@@ -411,7 +396,7 @@ func (uv *userValidator) rememberMinBytes(user *User) error {
 		return err
 	}
 	if n < 32 {
-		return ErroroRememberTooShort
+		return ErrorRememberTooShort
 	}
 
 	return nil
@@ -441,7 +426,7 @@ func (uv *userValidator) requireEmail(user *User) error {
 
 func (uv *userValidator) emailFormat(user *User) error {
 	if user.Email != "" && !uv.emailRegexp.MatchString(user.Email) {
-		return ErroroEmailInvalid
+		return ErrorEmailInvalid
 	}
 	return nil
 }
