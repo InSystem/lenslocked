@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"log"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/InSystem/lenslocked/rand"
@@ -97,9 +97,14 @@ type LoginForm struct {
 // Login is used to verify the provided email and password
 // and log in if they are correct
 func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
+	vd := views.Data{}
 	var form LoginForm
 	if err := parseForm(r, &form); err != nil {
-		panic(err) // http.Error will be more right
+		log.Println(err)
+		vd.SetAlert(err)
+		//nolint:errcheck
+		u.LoginView.Render(w, vd)
+		return
 	}
 
 	user, err := u.us.Authenticate(form.Email, form.Password)
@@ -107,17 +112,18 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case models.ErrorNotFound:
-			fmt.Fprintln(w, "Invalid email adress")
-		case models.ErrorPasswordIncorrect:
-			fmt.Fprintln(w, "Provided password is incorrect")
-
+			vd.AlertError("Invalid email adress")
 		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			vd.SetAlert(err)
 		}
+		//nolint:errcheck
+		u.LoginView.Render(w, vd)
 	} else {
 		err := u.signIn(w, user)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			vd.SetAlert(err)
+			//nolint:errcheck
+			u.LoginView.Render(w, vd)
 			return
 		}
 		http.Redirect(w, r, "/cookietest", http.StatusFound)
