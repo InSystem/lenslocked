@@ -32,17 +32,7 @@ func NewUsers(us models.UserService) *Users {
 // New is used to create a form where user can create  anew account
 // GET /signup
 func (u *Users) New(w http.ResponseWriter, r *http.Request) {
-	// d := views.Data{
-	// 	Alert: &views.Alert{
-	// 		Level:   views.AlertLevelWarning,
-	// 		Message: "something went wrong",
-	// 	},
-	// 	Yield: "Hello",
-	// }
-
-	if err := u.NewView.Render(w, nil); err != nil {
-		panic(err)
-	}
+	u.NewView.Render(w, nil);
 }
 
 // SignupForm is  New User sctruct
@@ -61,7 +51,6 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 	if err := parseForm(r, &form); err != nil {
 		log.Println(err)
 		vd.SetAlert(err)
-		//nolint:errcheck
 		u.NewView.Render(w, vd)
 		return 
 	}
@@ -74,7 +63,6 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	if err := u.us.Create(&user); err != nil {
 		vd.SetAlert(err)
-		//nolint:errcheck
 		u.NewView.Render(w, vd)
 		return
 	}
